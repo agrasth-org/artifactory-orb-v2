@@ -1,0 +1,51 @@
+description: Promote Docker image between repositories
+
+parameters:
+  image:
+    type: string
+    description: Docker image name (without tag)
+
+  source-repo:
+    type: string
+    description: Source repository name
+
+  target-repo:
+    type: string
+    description: Target repository name
+
+  tag:
+    type: string
+    default: latest
+    description: Image tag to promote
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+  copy:
+    type: boolean
+    default: false
+    description: Copy instead of move
+
+steps:
+  - run:
+      name: Promote Docker image
+      command: |
+        echo "Promoting Docker image..."
+        echo "Image: <<parameters.image>>:<<parameters.tag>>"
+        echo "From: <<parameters.source-repo>>"
+        echo "To: <<parameters.target-repo>>"
+        
+        COPY_FLAG=""
+        if [ "<<parameters.copy>>" = "true" ]; then
+            COPY_FLAG="--copy"
+        fi
+        
+        jf rt docker-promote "<<parameters.image>>" "<<parameters.source-repo>>" "<<parameters.target-repo>>" \
+            --source-tag="<<parameters.tag>>" \
+            --server-id="<<parameters.server-id>>" \
+            $COPY_FLAG
+        
+        echo "Docker promote complete"
+

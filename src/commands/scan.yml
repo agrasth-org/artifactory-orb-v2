@@ -1,0 +1,41 @@
+description: Scan build with JFrog Xray
+
+parameters:
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+  fail-build:
+    type: boolean
+    default: true
+    description: Fail the build if security issues are found
+
+steps:
+  - run:
+      name: Scan build with Xray
+      command: |
+        echo "Scanning build with Xray..."
+        echo "Build: <<parameters.build-name>>/<<parameters.build-number>>"
+        
+        FAIL_FLAG="--fail=false"
+        if [ "<<parameters.fail-build>>" = "true" ]; then
+            FAIL_FLAG="--fail=true"
+        fi
+        
+        jf rt build-scan "<<parameters.build-name>>" "<<parameters.build-number>>" \
+            --server-id="<<parameters.server-id>>" \
+            $FAIL_FLAG
+        
+        echo "Scan complete"
+

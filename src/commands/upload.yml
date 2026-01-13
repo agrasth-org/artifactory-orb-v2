@@ -1,0 +1,55 @@
+description: Upload artifacts to Artifactory
+
+parameters:
+  source:
+    type: string
+    description: Source path or pattern (e.g., "target/*.jar")
+
+  target:
+    type: string
+    description: Target repository path (e.g., "libs-release-local/")
+
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name for build info
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number for build info
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+  flat:
+    type: boolean
+    default: false
+    description: Upload files in flat hierarchy
+
+steps:
+  - run:
+      name: Upload artifacts to Artifactory
+      command: |
+        echo "Uploading artifacts..."
+        echo "Source: <<parameters.source>>"
+        echo "Target: <<parameters.target>>"
+        echo "Build: <<parameters.build-name>>/<<parameters.build-number>>"
+        
+        FLAT_FLAG=""
+        if [ "<<parameters.flat>>" = "true" ]; then
+            FLAT_FLAG="--flat"
+        fi
+        
+        jf rt upload \
+            "<<parameters.source>>" \
+            "<<parameters.target>>" \
+            --build-name="<<parameters.build-name>>" \
+            --build-number="<<parameters.build-number>>" \
+            --server-id="<<parameters.server-id>>" \
+            $FLAT_FLAG
+        
+        echo "Upload complete"
+

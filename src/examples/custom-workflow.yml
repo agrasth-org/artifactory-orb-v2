@@ -1,0 +1,46 @@
+description: Custom workflow using individual commands
+
+usage:
+  version: 2.1
+
+  orbs:
+    artifactory: jfrog/artifactory-orb@2.0.0
+
+  jobs:
+    build-test-upload:
+      docker:
+        - image: cimg/node:18.0
+      steps:
+        - checkout
+        
+        - artifactory/install
+        
+        - artifactory/configure
+        
+        - run:
+            name: Install dependencies
+            command: npm install
+        
+        - run:
+            name: Run tests
+            command: npm test
+        
+        - run:
+            name: Build
+            command: npm run build
+        
+        - artifactory/upload:
+            source: "dist/*"
+            target: "npm-local/myapp/${CIRCLE_BUILD_NUM}/"
+        
+        - artifactory/build-integration
+        
+        - artifactory/scan:
+            fail-build: true
+
+  workflows:
+    build-and-deploy:
+      jobs:
+        - build-test-upload:
+            context: jfrog-context
+

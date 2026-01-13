@@ -1,0 +1,41 @@
+description: Push Docker image to Artifactory
+
+parameters:
+  docker-tag:
+    type: string
+    description: Full Docker image tag (e.g., "myregistry/image:tag")
+
+  repository:
+    type: string
+    description: Artifactory Docker repository name
+
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name for build info
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number for build info
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+steps:
+  - run:
+      name: Push Docker image to Artifactory
+      command: |
+        echo "Pushing Docker image..."
+        echo "Image: <<parameters.docker-tag>>"
+        echo "Repository: <<parameters.repository>>"
+        
+        jf rt docker-push "<<parameters.docker-tag>>" "<<parameters.repository>>" \
+            --build-name="<<parameters.build-name>>" \
+            --build-number="<<parameters.build-number>>" \
+            --server-id="<<parameters.server-id>>"
+        
+        echo "Docker push complete"
+

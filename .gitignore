@@ -1,0 +1,19 @@
+# Generated/packed orb file (build artifact)
+orb.yml
+
+# JFrog CLI binary (if downloaded locally)
+jf
+jfrog
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+

@@ -1,0 +1,45 @@
+description: Promote Docker image between repositories
+
+executor: default
+
+parameters:
+  image:
+    type: string
+    description: Docker image name
+
+  source-repo:
+    type: string
+    description: Source repository
+
+  target-repo:
+    type: string
+    description: Target repository
+
+  tag:
+    type: string
+    default: latest
+    description: Image tag
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID
+
+  copy:
+    type: boolean
+    default: false
+    description: Copy instead of move
+
+steps:
+  - install
+
+  - configure
+
+  - docker-promote:
+      image: <<parameters.image>>
+      source-repo: <<parameters.source-repo>>
+      target-repo: <<parameters.target-repo>>
+      tag: <<parameters.tag>>
+      server-id: <<parameters.server-id>>
+      copy: <<parameters.copy>>
+

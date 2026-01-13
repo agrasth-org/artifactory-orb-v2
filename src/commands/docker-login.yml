@@ -1,0 +1,36 @@
+description: Login to JFrog Docker registry
+
+parameters:
+  docker-registry:
+    type: string
+    description: Docker registry URL (e.g., "mycompany.jfrog.io")
+
+  user:
+    type: env_var_name
+    default: ARTIFACTORY_USER
+    description: Environment variable containing username
+
+  password:
+    type: env_var_name
+    default: ARTIFACTORY_PASSWORD
+    description: Environment variable containing password or access token
+
+steps:
+  - run:
+      name: Login to Docker registry
+      command: |
+        echo "Logging into Docker registry: <<parameters.docker-registry>>"
+        
+        USER="${<<parameters.user>>}"
+        PASSWORD="${<<parameters.password>>}"
+        
+        if [ -z "$USER" ] || [ -z "$PASSWORD" ]; then
+            echo "Error: Docker credentials not found"
+            echo "Set <<parameters.user>> and <<parameters.password>> environment variables"
+            exit 1
+        fi
+        
+        echo "$PASSWORD" | docker login -u "$USER" --password-stdin "<<parameters.docker-registry>>"
+        
+        echo "Docker login successful"
+

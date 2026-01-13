@@ -1,0 +1,134 @@
+version: 2.1
+
+# Local inline orb for testing WITHOUT publishing
+# This embeds the orb directly in your config for testing
+
+setup: true
+
+orbs:
+  artifactory:
+    commands:
+      install:
+        description: Install JFrog CLI
+        parameters:
+          version:
+            type: string
+            default: "2.54.0"
+            description: JFrog CLI version
+        steps:
+          - run:
+              name: Install JFrog CLI
+              command: |
+                #!/bin/bash
+                set -e
+                VERSION="<<parameters.version>>"
+                echo "Installing JFrog CLI version: $VERSION"
+                
+                # Detect OS
+                OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+                
+                if [[ "$OS" == "darwin" ]]; then
+                    OS="mac"
+                elif [[ "$OS" == "linux" ]]; then
+                    OS="linux"
+                fi
+                
+                # Detect architecture
+                ARCH=$(uname -m)
+                if [[ "$ARCH" == "x86_64" ]]; then
+                    ARCH="amd64"
+                elif [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]]; then
+                    ARCH="arm64"
+                fi
+                
+                # Download and install
+                DOWNLOAD_URL="https://releases.jfrog.io/artifactory/jfrog-cli/v2/${VERSION}/jfrog-cli-${OS}-${ARCH}/jf"
+                
+                echo "Downloading from: $DOWNLOAD_URL"
+                curl -fL "$DOWNLOAD_URL" -o /tmp/jf
+                chmod +x /tmp/jf
+                sudo mv /tmp/jf /usr/local/bin/jf
+                
+                # Verify installation
+                jf --version
+                echo "JFrog CLI installed successfully!"
+
+      configure:
+        description: Configure JFrog CLI
+        parameters:
+          server-id:
+            type: string
+            default: "circleci-rt"
+          url:
+            type: string
+          user:
+            type: string
+          apikey:
+            type: string
+        steps:
+          - run:
+              name: Configure JFrog CLI
+              command: |
+                #!/bin/bash
+                set -e
+                
+                echo "Configuring JFrog CLI..."
+                jf config add "<<parameters.server-id>>" \
+                  --artifactory-url="<<parameters.url>>" \
+                  --user="<<parameters.user>>" \
+                  --password="<<parameters.apikey>>" \
+                  --interactive=false
+                
+                echo "JFrog CLI configured successfully!"
+                jf config show "<<parameters.server-id>>"
+
+workflows:
+  test-local-orb:
+    jobs:
+      - test-install-and-configure
+
+jobs:
+  test-install-and-configure:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      
+      - artifactory/install:
+          version: "2.54.0"
+      
+      - run:
+          name: Verify Installation
+          command: |
+            echo "Testing JFrog CLI installation..."
+            jf --version
+      
+      - artifactory/configure:
+          server-id: "test-server"
+          url: ${ARTIFACTORY_URL}
+          user: ${ARTIFACTORY_USER}
+          apikey: ${ARTIFACTORY_API_KEY}
+      
+      - run:
+          name: Verify Configuration
+          command: |
+            echo "Testing JFrog CLI configuration..."
+            jf config show test-server
+            echo "Configuration successful!"
+      
+      - run:
+          name: Create Test File
+          command: |
+            echo "Test from CircleCI build ${CIRCLE_BUILD_NUM}" > test.txt
+            ls -la test.txt
+      
+      - run:
+          name: Test Upload (if configured)
+          command: |
+            # This will only work if you have ARTIFACTORY_* vars set
+            if [ -n "$ARTIFACTORY_URL" ]; then
+              jf rt upload "test.txt" "test-repo/circleci/" --server-id=test-server || echo "Upload failed (expected if no valid credentials)"
+            else
+              echo "Skipping upload - no ARTIFACTORY_URL set"
+            fi
+

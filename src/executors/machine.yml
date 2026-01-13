@@ -1,0 +1,6 @@
+description: |
+  Machine executor for Docker operations.
+
+machine:
+  image: ubuntu-2204:current
+

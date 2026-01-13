@@ -1,0 +1,28 @@
+description: Build, push, and promote Docker images
+
+usage:
+  version: 2.1
+
+  orbs:
+    artifactory: jfrog/artifactory-orb@2.0.0
+
+  workflows:
+    docker-workflow:
+      jobs:
+        - artifactory/docker-publish:
+            name: Build and Push
+            docker-registry: mycompany.jfrog.io
+            docker-tag: mycompany.jfrog.io/docker-local/myapp:${CIRCLE_SHA1}
+            repository: docker-local
+            context: jfrog-context
+        
+        - artifactory/docker-promote:
+            name: Promote to Production
+            image: myapp
+            source-repo: docker-local
+            target-repo: docker-prod-local
+            tag: ${CIRCLE_SHA1}
+            requires:
+              - Build and Push
+            context: jfrog-context
+

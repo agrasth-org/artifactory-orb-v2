@@ -1,0 +1,12 @@
+description: |
+  Default Docker executor for JFrog operations.
+
+parameters:
+  docker-image:
+    type: string
+    default: cimg/base:current
+    description: Docker image to use
+
+docker:
+  - image: <<parameters.docker-image>>
+

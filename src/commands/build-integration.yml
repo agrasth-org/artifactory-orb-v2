@@ -1,0 +1,63 @@
+description: Collect and publish build information to Artifactory
+
+parameters:
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+  include-git:
+    type: boolean
+    default: true
+    description: Collect Git information
+
+  include-env:
+    type: boolean
+    default: true
+    description: Collect environment variables
+
+steps:
+  - when:
+      condition: <<parameters.include-git>>
+      steps:
+        - run:
+            name: Collect Git information
+            command: |
+              if [ -d ".git" ]; then
+                  echo "Collecting Git information..."
+                  jf rt build-add-git "<<parameters.build-name>>" "<<parameters.build-number>>" \
+                      --server-id="<<parameters.server-id>>"
+              else
+                  echo "Skipping Git collection (not a git repository)"
+              fi
+
+  - when:
+      condition: <<parameters.include-env>>
+      steps:
+        - run:
+            name: Collect environment variables
+            command: |
+              echo "Collecting environment variables..."
+              jf rt build-collect-env "<<parameters.build-name>>" "<<parameters.build-number>>" \
+                  --server-id="<<parameters.server-id>>"
+
+  - run:
+      name: Publish build info
+      command: |
+        echo "Publishing build info..."
+        jf rt build-publish "<<parameters.build-name>>" "<<parameters.build-number>>" \
+            --server-id="<<parameters.server-id>>"
+        
+        echo "Build info published successfully"
+        echo "Build: <<parameters.build-name>>/<<parameters.build-number>>"
+

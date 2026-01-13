@@ -1,0 +1,82 @@
+description: Build and upload artifacts to Artifactory
+
+parameters:
+  docker-image:
+    type: string
+    default: cimg/base:current
+    description: Docker image for the build
+
+  build-steps:
+    type: steps
+    default: []
+    description: Steps to build artifacts
+
+  source:
+    type: string
+    description: Source path or pattern to upload
+
+  target:
+    type: string
+    description: Target repository path
+
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID
+
+  build-integration:
+    type: boolean
+    default: true
+    description: Publish build info after upload
+
+  include-git:
+    type: boolean
+    default: true
+    description: Include Git info in build info
+
+  include-env:
+    type: boolean
+    default: true
+    description: Include environment vars in build info
+
+docker:
+  - image: <<parameters.docker-image>>
+
+steps:
+  - checkout
+
+  - when:
+      condition: <<parameters.build-steps>>
+      steps: <<parameters.build-steps>>
+
+  - install
+
+  - configure
+
+  - upload:
+      source: <<parameters.source>>
+      target: <<parameters.target>>
+      build-name: <<parameters.build-name>>
+      build-number: <<parameters.build-number>>
+      server-id: <<parameters.server-id>>
+
+  - when:
+      condition: <<parameters.build-integration>>
+      steps:
+        - build-integration:
+            build-name: <<parameters.build-name>>
+            build-number: <<parameters.build-number>>
+            server-id: <<parameters.server-id>>
+            include-git: <<parameters.include-git>>
+            include-env: <<parameters.include-env>>
+

@@ -1,0 +1,59 @@
+description: Download artifacts from Artifactory
+
+parameters:
+  source:
+    type: string
+    description: Source path or pattern in Artifactory
+
+  target:
+    type: string
+    default: "./"
+    description: Local target directory
+
+  build-name:
+    type: string
+    default: ""
+    description: Build name (optional, for build info)
+
+  build-number:
+    type: string
+    default: ""
+    description: Build number (optional, for build info)
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID from configure command
+
+  flat:
+    type: boolean
+    default: false
+    description: Download files in flat hierarchy
+
+steps:
+  - run:
+      name: Download artifacts from Artifactory
+      command: |
+        echo "Downloading artifacts..."
+        echo "Source: <<parameters.source>>"
+        echo "Target: <<parameters.target>>"
+        
+        FLAT_FLAG=""
+        if [ "<<parameters.flat>>" = "true" ]; then
+            FLAT_FLAG="--flat"
+        fi
+        
+        BUILD_FLAGS=""
+        if [ -n "<<parameters.build-name>>" ] && [ -n "<<parameters.build-number>>" ]; then
+            BUILD_FLAGS="--build-name=<<parameters.build-name>> --build-number=<<parameters.build-number>>"
+        fi
+        
+        jf rt download \
+            "<<parameters.source>>" \
+            "<<parameters.target>>" \
+            --server-id="<<parameters.server-id>>" \
+            $FLAT_FLAG \
+            $BUILD_FLAGS
+        
+        echo "Download complete"
+

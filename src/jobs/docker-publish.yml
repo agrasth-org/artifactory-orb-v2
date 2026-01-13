@@ -1,0 +1,79 @@
+description: Build and push Docker image to Artifactory
+
+executor: machine
+
+parameters:
+  docker-registry:
+    type: string
+    description: Docker registry URL
+
+  docker-tag:
+    type: string
+    description: Full Docker image tag
+
+  repository:
+    type: string
+    description: Artifactory Docker repository
+
+  dockerfile:
+    type: string
+    default: Dockerfile
+    description: Path to Dockerfile
+
+  docker-context:
+    type: string
+    default: "."
+    description: Docker build context
+
+  build-name:
+    type: string
+    default: ${CIRCLE_PROJECT_REPONAME}
+    description: Build name
+
+  build-number:
+    type: string
+    default: ${CIRCLE_BUILD_NUM}
+    description: Build number
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID
+
+  build-integration:
+    type: boolean
+    default: true
+    description: Publish build info
+
+steps:
+  - checkout
+
+  - install
+
+  - configure
+
+  - docker-login:
+      docker-registry: <<parameters.docker-registry>>
+
+  - run:
+      name: Build Docker image
+      command: |
+        docker build -t "<<parameters.docker-tag>>" \
+            -f "<<parameters.dockerfile>>" \
+            "<<parameters.docker-context>>"
+
+  - docker-push:
+      docker-tag: <<parameters.docker-tag>>
+      repository: <<parameters.repository>>
+      build-name: <<parameters.build-name>>
+      build-number: <<parameters.build-number>>
+      server-id: <<parameters.server-id>>
+
+  - when:
+      condition: <<parameters.build-integration>>
+      steps:
+        - build-integration:
+            build-name: <<parameters.build-name>>
+            build-number: <<parameters.build-number>>
+            server-id: <<parameters.server-id>>
+

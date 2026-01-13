@@ -1,0 +1,82 @@
+description: Configure JFrog CLI with Artifactory server
+
+parameters:
+  artifactory-url:
+    type: env_var_name
+    default: ARTIFACTORY_URL
+    description: Environment variable containing Artifactory URL
+
+  access-token:
+    type: env_var_name
+    default: ARTIFACTORY_ACCESS_TOKEN
+    description: Environment variable containing access token
+
+  user:
+    type: env_var_name
+    default: ARTIFACTORY_USER
+    description: Environment variable containing username
+
+  password:
+    type: env_var_name
+    default: ARTIFACTORY_PASSWORD
+    description: Environment variable containing password or API key
+
+  server-id:
+    type: string
+    default: circleci-rt
+    description: Server ID for JFrog CLI configuration
+
+steps:
+  - run:
+      name: Configure JFrog CLI
+      command: |
+        SERVER_ID="<<parameters.server-id>>"
+        URL="${<<parameters.artifactory-url>>}"
+        
+        # Validate URL
+        if [ -z "$URL" ]; then
+            echo "Error: Artifactory URL is required"
+            echo "Set <<parameters.artifactory-url>> environment variable"
+            exit 1
+        fi
+        
+        echo "Configuring JFrog CLI..."
+        echo "Server ID: $SERVER_ID"
+        echo "URL: $URL"
+        
+        # Determine authentication method
+        ACCESS_TOKEN="${<<parameters.access-token>>:-}"
+        USER="${<<parameters.user>>:-}"
+        PASSWORD="${<<parameters.password>>:-}"
+        
+        if [ -n "$ACCESS_TOKEN" ]; then
+            echo "Using access token authentication"
+            jf config add "$SERVER_ID" \
+                --artifactory-url="$URL" \
+                --access-token="$ACCESS_TOKEN" \
+                --interactive=false \
+                --overwrite
+        elif [ -n "$USER" ] && [ -n "$PASSWORD" ]; then
+            echo "Using username/password authentication"
+            jf config add "$SERVER_ID" \
+                --artifactory-url="$URL" \
+                --user="$USER" \
+                --password="$PASSWORD" \
+                --interactive=false \
+                --overwrite
+        else
+            echo "Error: No authentication credentials found"
+            echo "Set <<parameters.access-token>> or (<<parameters.user>> + <<parameters.password>>)"
+            exit 1
+        fi
+        
+        # Verify connection
+        echo "Verifying connection..."
+        if jf rt ping --server-id="$SERVER_ID"; then
+            echo "Connection verified successfully"
+        else
+            echo "Warning: Could not verify connection to Artifactory"
+        fi
+        
+        echo "Configuration complete"
+

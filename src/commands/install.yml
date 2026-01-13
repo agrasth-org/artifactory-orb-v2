@@ -1,0 +1,28 @@
+description: Install JFrog CLI v2
+
+parameters:
+  version:
+    type: string
+    default: "2"
+    description: JFrog CLI version to install
+
+steps:
+  - run:
+      name: Install JFrog CLI
+      command: |
+        VERSION="<<parameters.version>>"
+        
+        # Check if already installed
+        if command -v jf &> /dev/null; then
+            echo "JFrog CLI already installed: $(jf --version)"
+            exit 0
+        fi
+        
+        echo "Installing JFrog CLI v${VERSION}..."
+        curl -fL https://install-cli.jfrog.io | sh -s "${VERSION}"
+        chmod +x jf
+        sudo mv jf /usr/local/bin/jf
+        
+        jf --version
+        echo "JFrog CLI installed successfully"
+
