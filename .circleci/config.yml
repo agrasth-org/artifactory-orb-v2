@@ -1,67 +1,31 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/reference/configuration-reference
 version: 2.1
 
-# Use your new JFrog Artifactory orb
-orbs:
-  artifactory: agrasth-org/artifactory-orb-v2@dev:test2
-
-# Simple workflow to test the orb
-workflows:
-  test-artifactory-orb:
-    jobs:
-      - test-basic-commands
-
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/guides/orchestrate/jobs-steps/#jobs-overview & https://circleci.com/docs/reference/configuration-reference/#jobs
 jobs:
-  test-basic-commands:
+  say-hello:
+    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/guides/execution-managed/executor-intro/ & https://circleci.com/docs/reference/configuration-reference/#executor-job
     docker:
+      # Specify the version you desire here
+      # See: https://circleci.com/developer/images/image/cimg/base
       - image: cimg/base:current
-    steps:
-      - checkout
-      
-      # Test orb command: install
-      - artifactory/install
-      
-      - run:
-          name: Verify JFrog CLI installed
-          command: |
-            echo "Checking JFrog CLI version..."
-            jf --version
-            echo "✅ JFrog CLI installed successfully!"
-      
-      # Test orb command: configure
-      - artifactory/configure:
-          url: ${ARTIFACTORY_URL}
-          user: ${ARTIFACTORY_USER}
-          apikey: ${ARTIFACTORY_API_KEY}
-          server-id: "test-server"
-      
-      - run:
-          name: Verify configuration
-          command: |
-            echo "Checking JFrog CLI configuration..."
-            jf config show test-server
-            echo "✅ JFrog CLI configured successfully!"
-      
-      # Create a test file
-      - run:
-          name: Create test artifact
-          command: |
-            echo "Hello from CircleCI build ${CIRCLE_BUILD_NUM}" > hello.txt
-            ls -la hello.txt
-      
-      # Test orb command: upload
-      - artifactory/upload:
-          source: "hello.txt"
-          target: "${ARTIFACTORY_REPO:-libs-release-local}/orb-test/"
-          server-id: "test-server"
-      
-      - run:
-          name: Success!
-          command: |
-            echo "================================"
-            echo "✅ All orb commands working!"
-            echo "================================"
-            echo "✅ install - PASSED"
-            echo "✅ configure - PASSED"
-            echo "✅ upload - PASSED"
-            echo "================================"
 
+    # Add steps to the job
+    # See: https://circleci.com/docs/guides/orchestrate/jobs-steps/#steps-overview & https://circleci.com/docs/reference/configuration-reference/#steps
+    steps:
+      # Checkout the code as the first step.
+      - checkout
+      - run:
+          name: "Say hello"
+          command: "echo Hello, World!"
+
+# Orchestrate jobs using workflows
+# See: https://circleci.com/docs/guides/orchestrate/workflows/ & https://circleci.com/docs/reference/configuration-reference/#workflows
+workflows:
+  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - say-hello
