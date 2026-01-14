@@ -4,8 +4,8 @@ version: 2.1
 # NOT the inline orb!
 
 orbs:
-  # Replace with your published dev version after: circleci orb publish orb.yml agrasth/artifactory-orb-v2@dev:test1
-  artifactory: agrasth/artifactory-orb-v2@dev:test1
+  # Using the published dev version
+  artifactory: agrasth-org/artifactory-orb-v2@dev:test1
 
 workflows:
   test-real-orb:
