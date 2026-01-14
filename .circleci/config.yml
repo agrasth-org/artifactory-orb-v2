@@ -75,7 +75,14 @@ orbs:
 workflows:
   test-local-orb:
     jobs:
+      # Test 1: Basic installation (no credentials needed)
       - test-install-and-configure
+      
+      # Test 2: Full test with real Artifactory (uses context)
+      - test-full-workflow:
+          context: jfrog-context  # Use your CircleCI context name here
+          requires:
+            - test-install-and-configure
 
 jobs:
   test-install-and-configure:
@@ -121,4 +128,102 @@ jobs:
             else
               echo "Skipping upload - no ARTIFACTORY_URL set"
             fi
+
+  test-full-workflow:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      
+      - artifactory/install
+      
+      - artifactory/configure:
+          server-id: "my-artifactory"
+          url: ${ARTIFACTORY_URL}
+          user: ${ARTIFACTORY_USER}
+          apikey: ${ARTIFACTORY_API_KEY}
+      
+      - run:
+          name: Verify Configuration
+          command: |
+            echo "Verifying JFrog CLI configuration..."
+            jf config show my-artifactory
+      
+      - run:
+          name: Create Test Artifacts
+          command: |
+            echo "Build: ${CIRCLE_BUILD_NUM}" > artifact-${CIRCLE_BUILD_NUM}.txt
+            echo "Project: ${CIRCLE_PROJECT_REPONAME}" >> artifact-${CIRCLE_BUILD_NUM}.txt
+            echo "Branch: ${CIRCLE_BRANCH}" >> artifact-${CIRCLE_BUILD_NUM}.txt
+            echo "Timestamp: $(date)" >> artifact-${CIRCLE_BUILD_NUM}.txt
+            
+            mkdir -p build/
+            echo "Sample JAR content" > build/sample-app.jar
+            echo "Sample config" > build/config.properties
+            
+            ls -la
+            ls -la build/
+      
+      - run:
+          name: Upload Artifacts to Artifactory
+          command: |
+            echo "Uploading artifacts to Artifactory..."
+            
+            # Upload single file
+            jf rt upload "artifact-${CIRCLE_BUILD_NUM}.txt" \
+              "generic-local/circleci-test/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/" \
+              --server-id=my-artifactory \
+              --build-name="${CIRCLE_PROJECT_REPONAME}" \
+              --build-number="${CIRCLE_BUILD_NUM}"
+            
+            # Upload directory
+            jf rt upload "build/*" \
+              "generic-local/circleci-test/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/build/" \
+              --server-id=my-artifactory \
+              --build-name="${CIRCLE_PROJECT_REPONAME}" \
+              --build-number="${CIRCLE_BUILD_NUM}"
+            
+            echo "Upload completed successfully!"
+      
+      - run:
+          name: Collect Build Information
+          command: |
+            echo "Collecting build information..."
+            
+            # Collect environment variables
+            jf rt build-collect-env "${CIRCLE_PROJECT_REPONAME}" "${CIRCLE_BUILD_NUM}" \
+              --server-id=my-artifactory
+            
+            # Collect Git information
+            jf rt build-add-git "${CIRCLE_PROJECT_REPONAME}" "${CIRCLE_BUILD_NUM}" \
+              --server-id=my-artifactory
+            
+            echo "Build info collected!"
+      
+      - run:
+          name: Publish Build Information
+          command: |
+            echo "Publishing build information to Artifactory..."
+            
+            jf rt build-publish "${CIRCLE_PROJECT_REPONAME}" "${CIRCLE_BUILD_NUM}" \
+              --server-id=my-artifactory
+            
+            echo "Build info published!"
+            echo "View in Artifactory: ${ARTIFACTORY_URL%/artifactory}/ui/builds/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}"
+      
+      - run:
+          name: Download Artifacts (Test Download)
+          command: |
+            echo "Testing artifact download..."
+            
+            mkdir -p downloaded/
+            jf rt download \
+              "generic-local/circleci-test/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/*" \
+              "downloaded/" \
+              --server-id=my-artifactory
+            
+            echo "Downloaded files:"
+            ls -laR downloaded/
+            
+            echo "Download test successful!"
 
