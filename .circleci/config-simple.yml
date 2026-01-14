@@ -1,0 +1,67 @@
+version: 2.1
+
+# Use your new JFrog Artifactory orb
+orbs:
+  artifactory: agrasth-org/artifactory-orb-v2@dev:test2
+
+# Simple workflow to test the orb
+workflows:
+  test-artifactory-orb:
+    jobs:
+      - test-basic-commands
+
+jobs:
+  test-basic-commands:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      
+      # Test orb command: install
+      - artifactory/install
+      
+      - run:
+          name: Verify JFrog CLI installed
+          command: |
+            echo "Checking JFrog CLI version..."
+            jf --version
+            echo "✅ JFrog CLI installed successfully!"
+      
+      # Test orb command: configure
+      - artifactory/configure:
+          url: ${ARTIFACTORY_URL}
+          user: ${ARTIFACTORY_USER}
+          apikey: ${ARTIFACTORY_API_KEY}
+          server-id: "test-server"
+      
+      - run:
+          name: Verify configuration
+          command: |
+            echo "Checking JFrog CLI configuration..."
+            jf config show test-server
+            echo "✅ JFrog CLI configured successfully!"
+      
+      # Create a test file
+      - run:
+          name: Create test artifact
+          command: |
+            echo "Hello from CircleCI build ${CIRCLE_BUILD_NUM}" > hello.txt
+            ls -la hello.txt
+      
+      # Test orb command: upload
+      - artifactory/upload:
+          source: "hello.txt"
+          target: "${ARTIFACTORY_REPO:-libs-release-local}/orb-test/"
+          server-id: "test-server"
+      
+      - run:
+          name: Success!
+          command: |
+            echo "================================"
+            echo "✅ All orb commands working!"
+            echo "================================"
+            echo "✅ install - PASSED"
+            echo "✅ configure - PASSED"
+            echo "✅ upload - PASSED"
+            echo "================================"
+

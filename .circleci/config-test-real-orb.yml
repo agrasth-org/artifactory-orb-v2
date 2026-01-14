@@ -5,7 +5,7 @@ version: 2.1
 
 orbs:
   # Using the published dev version
-  artifactory: agrasth-org/artifactory-orb-v2@dev:test1
+  artifactory: agrasth-org/artifactory-orb-v2@dev:test2
 
 workflows:
   test-real-orb:
